@@ -1,12 +1,23 @@
 """LLM picker — ported from AI_Data_Agent-reference/utils/llm_pick.py.
 
-The reference used LangChain (ChatOpenAI / ChatAnthropic). We don't pull in
-LangChain or LangGraph here — TrueForge is the orchestrator now — so this is a
-thin rewrite over the raw OpenAI Python SDK. Point OPENAI_BASE_URL at any
-OpenAI-compatible gateway (OpenAI, Azure, a local proxy, etc.).
+Why the `openai` SDK when we run on Fireworks?
+----------------------------------------------
+Fireworks serves an **OpenAI-compatible** API: same /chat/completions route, same
+request/response JSON, same bearer-token auth. The `openai` SDK lets you override
+`base_url`, so pointing it at Fireworks works with no code change. The package name
+describes the *protocol* it speaks, not the company it talks to — swap
+OPENAI_BASE_URL and it drives any compatible endpoint (OpenAI, Fireworks, Azure,
+a local vLLM proxy).
 
-Level -> model mapping defaults to the reference repo's model names and is
-overridable per level via env vars.
+`OpenAI()` reads OPENAI_API_KEY and OPENAI_BASE_URL straight from the environment,
+which is why neither appears anywhere in this file.
+
+Model names
+-----------
+Model ids must be whatever the *endpoint* understands. Against Fireworks that means
+`accounts/fireworks/models/<name>`; a bare `gpt-...` id would 404. Defaults below
+match the values in .env.example so an unconfigured run fails the same way a
+misconfigured one does, instead of silently reaching for a different provider.
 """
 
 import os
@@ -19,10 +30,10 @@ load_dotenv()
 _client: OpenAI | None = None
 
 _LEVEL_MODELS = {
-    "low": os.environ.get("TF_MODEL_LOW", "gpt-5.6-luna"),
-    "medium": os.environ.get("TF_MODEL_MEDIUM", "gpt-5.6-terra"),
-    "high": os.environ.get("TF_MODEL_HIGH", "gpt-5.6-sol"),
-    "claude": os.environ.get("TF_MODEL_CLAUDE", "claude-sonnet-5"),
+    "low": os.environ.get("TF_MODEL_LOW", "accounts/fireworks/models/glm-5p2"),
+    "medium": os.environ.get("TF_MODEL_MEDIUM", "accounts/fireworks/models/kimi-k3"),
+    "high": os.environ.get("TF_MODEL_HIGH", "accounts/fireworks/models/kimi-k3"),
+    "claude": os.environ.get("TF_MODEL_CLAUDE", "accounts/fireworks/models/minimax-m3"),
 }
 
 

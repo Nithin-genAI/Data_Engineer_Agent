@@ -25,6 +25,12 @@ from database import DatabaseUtil
 
 load_dotenv()
 
+# Generated pandas code refers to data files by project-relative paths (e.g.
+# "data/payments.csv"), but this process is launched from mcp-server/. Execute
+# from the project root so those paths resolve. This is path resolution only —
+# no sandboxing or policy, which stay TrueForge's job.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 mcp = FastMCP("data-agent")
 
 
@@ -67,7 +73,11 @@ def execute_transform(code: str) -> str:
     buf = io.StringIO()
     glob = {"__name__": "__main__"}
     try:
-        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+        with (
+            contextlib.chdir(PROJECT_ROOT),
+            contextlib.redirect_stdout(buf),
+            contextlib.redirect_stderr(buf),
+        ):
             exec(code, glob)
         out = buf.getvalue().strip()
         return out if out else "Code executed successfully."
