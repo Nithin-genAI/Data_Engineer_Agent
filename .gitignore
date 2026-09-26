@@ -1,4 +1,32 @@
+# ---- Secrets ----
 .env
-.claude
-.venv
+.env.local
+*.key
 
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Node / TrueForge ----
+node_modules/
+.trueforge/
+
+# ---- Agent tooling ----
+.claude/
+
+# ---- macOS ----
+.DS_Store
+
+# ---- Generated outputs (inputs in data/*.csv stay tracked) ----
+data/transform/*.csv
+data/extract/*.csv
+
+# ---- Logs ----
+*.log
+nohup.out
