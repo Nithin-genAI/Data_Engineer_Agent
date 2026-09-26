@@ -1,0 +1,11 @@
+# MCP server runtime — only what the 4 tools actually import.
+# Pinned to the v1 line: v2 of the SDK renamed FastMCP -> MCPServer.
+mcp>=1.2,<2
+# LLM generation (OpenAI-compatible; set OPENAI_BASE_URL to point at a gateway).
+openai>=1.40,<2
+# Postgres execution + schema fetch.
+psycopg2-binary>=2.9,<3
+# pandas codegen + transform context reading.
+pandas>=2.0,<3
+# .env loading for DB + LLM config.
+python-dotenv>=1.0,<2
