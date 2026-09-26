@@ -36,8 +36,28 @@ That single boundary is the whole design.
 | **Claude Code** | Primary build tool — architecture, porting logic out of the reference repo, the FastMCP server, the Postgres loader, and debugging the TrueForge API integration end to end. |
 | **TrueForge** (`@truefoundry/trueforge` v0.2.1) | The harness itself, in local standalone mode. Its OpenAPI spec was the reference for discovering the correct approval-policy surface and for debugging several integration failures. |
 | **Fireworks AI** | Model provider inside the running app — three models mapped by task weight: `glm-5p2` (query curation), `kimi-k3` (SQL + pandas generation), `minimax-m3` (ETL path). |
-| **Cursor / VS Code** | Reading the reference repo, intermediate scripts. |
-| **Postman + `curl`** | Querying the TrueForge REST API directly when the UI couldn't show the agent's internal steps. |
+| **`curl` + Python scripts** | Driving the TrueForge REST API directly when the UI couldn't show the agent's internal steps — session/turn creation, event-stream polling, and confirming the approval gate. |
+| **FastMCP** | The MCP server framework exposing our four tools over SSE. |
+| **PostgreSQL 16 + Homebrew** | Local database, loaded via a ported `COPY`-based CSV loader. |
+
+> _Add your own editor/IDE here if you used one — it wasn't something I could verify from the build._
+
+## Demo questions (all verified end to end)
+
+Every question below was run through the real agent loop; results below are actual output.
+
+| # | Ask this | Path | Verified result |
+|---|---|---|---|
+| 1 | *Which 5 cities have the highest average ride fare, and how many rides does each have?* | SQL | Toronto `65.23` (2067 rides), Edmonton `65.06`, Halifax `64.98`, Winnipeg `64.66`, Calgary `64.51` — agent writes a `JOIN` + `AVG` + `COUNT` + `GROUP BY` unprompted |
+| 2 | *What percentage of all rides were cancelled, and what are the top cancellation reasons? Show the count for each reason.* | SQL | **9.63%** (1925 / 20000); top reason `other` 416. Generates a CTE with `COUNT(*) FILTER (WHERE …)` + `CROSS JOIN` |
+| 3 | *Who are the top 5 drivers by average rating? Only include drivers with at least 10 ratings, and show their name and rating count.* | SQL | Sara Garcia `4.9` (10), Kelly Hughes `4.8`, Brandi Kim `4.7` |
+| 4 | *Using pandas, load data/payments.csv, keep only rows where payment_status is 'failed', count how many failed payments there are per payment_method, and save the result to data/transform/failed_by_method.csv* | ETL | `google_pay 181 · paypal 179 · credit_card 179 · apple_pay 170 · debit_card 154` — written to a real CSV on disk |
+
+**Data traps — these questions return empty if you get the values wrong:**
+
+- `payment_status` is `completed` / `failed` / `refunded`. There is **no `'success'`**.
+- No driver has more than **12 ratings** — a `>= 50` threshold silently returns `[]`.
+- `ride.status` is `cancelled` / `completed` / `in_progress` / `requested`.
 
 ## Architecture
 
@@ -129,6 +149,9 @@ Data_Agent/
 ```
 
 ## Running it
+
+> Full step-by-step startup, re-registration payloads, and a troubleshooting table live in
+> **[RUNBOOK.md](RUNBOOK.md)**.
 
 ```bash
 # Postgres (Homebrew)
